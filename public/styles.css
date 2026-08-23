@@ -85,8 +85,8 @@ button {
 
 button[type="submit"] {
   color: white;
-  border-color: #176b45;
-  background: #176b45;
+  border-color: #000b29;
+  background: #000b29;
 }
 
 button:disabled { opacity: .55; cursor: default; }
