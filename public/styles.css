@@ -1,0 +1,130 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 20px;
+  color: #222;
+  background: #f5f5f5;
+  font: 14px/1.35 Arial, sans-serif;
+}
+
+main {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+h1 {
+  margin: 0 0 12px;
+  font-size: 22px;
+}
+
+form, section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #bbb;
+  background: white;
+}
+
+label {
+  display: grid;
+  gap: 3px;
+  font-weight: 600;
+}
+
+input, button {
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid #999;
+  border-radius: 3px;
+  background: white;
+  font: inherit;
+}
+
+input[type="checkbox"], input[type="radio"] {
+  min-height: 0;
+  width: auto;
+  margin: 0;
+}
+
+button {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+button[type="submit"] {
+  color: white;
+  border-color: #176b45;
+  background: #176b45;
+}
+
+button:disabled { opacity: .55; cursor: default; }
+.wide { grid-column: 1 / -1; }
+.hidden { display: none !important; }
+
+fieldset {
+  margin: 0;
+  padding: 8px;
+  border: 1px solid #bbb;
+}
+
+legend { padding: 0 4px; font-weight: 600; }
+
+.inline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.inline label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: normal;
+}
+
+.options { padding: 2px 0; }
+.authorize { display: flex; align-items: center; gap: 6px; color: #8b3100; }
+.error { padding: 8px; color: #9c1d1d; background: #ffecec; }
+
+section {
+  display: block;
+  margin-top: 12px;
+}
+
+section header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+#status-pill { text-transform: capitalize; }
+.summary { margin-bottom: 8px; }
+
+.event-log {
+  max-height: 220px;
+  overflow: auto;
+  margin-bottom: 8px;
+  padding: 8px;
+  color: #eee;
+  background: #222;
+  font: 12px/1.4 Consolas, monospace;
+}
+
+.log-line {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.log-line.success span { color: #9ee7a7; }
+.log-line.warning span { color: #ffe08a; }
+.log-line.error span { color: #ff9b9b; }
+
+@media (max-width: 600px) {
+  body { padding: 8px; }
+  form { grid-template-columns: 1fr; }
+  .wide { grid-column: 1; }
+}
