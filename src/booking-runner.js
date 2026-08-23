@@ -105,7 +105,7 @@ export class BookingRunner extends EventEmitter {
   }
 
   async stop() {
-    if (["booked", "dry-run-ready", "failed", "stopped"].includes(this.status)) return;
+    if (["booked", "failed", "stopped"].includes(this.status)) return;
     this.abortController.abort();
     await this.browser?.close().catch(() => {});
   }
@@ -189,8 +189,9 @@ export class BookingRunner extends EventEmitter {
       }
 
       this.setStatus("waiting");
-      this.log(`Not available yet. Refreshing in ${this.config.pollIntervalSeconds} seconds.`);
-      await abortableDelay(this.config.pollIntervalSeconds * 1000, this.abortController.signal);
+      const refreshSeconds = this.nextRefreshSeconds();
+      this.log(`Not available yet. Refreshing in ${refreshSeconds} seconds.`);
+      await abortableDelay(refreshSeconds * 1000, this.abortController.signal);
     }
 
     throw new Error(`No matching slot became available within ${this.config.maxWaitMinutes} minutes.`);
@@ -313,12 +314,12 @@ export class BookingRunner extends EventEmitter {
     await payButton.waitFor({ state: "visible", timeout: 20_000 });
     await this.observationPause("Payment page is ready.");
 
-    if (this.config.mode === "dry-run") {
-      await mkdir(this.artifactsDir, { recursive: true });
-      const screenshot = path.join(this.artifactsDir, `${this.id}-dry-run.png`);
-      await this.page.screenshot({ path: screenshot, fullPage: true });
-      this.log(`Dry run complete. Checkout is ready; no payment was submitted. Screenshot: ${screenshot}`, "success");
-      this.setStatus("dry-run-ready");
+    if (this.config.mode === "manual") {
+      this.setStatus("awaiting-payment");
+      this.log("Payment page is ready. Complete the payment manually in the browser; the bot will keep waiting.", "success");
+      await this.waitForManualPayment();
+      this.log("Court booked successfully.", "success");
+      this.setStatus("booked");
       return;
     }
 
@@ -365,6 +366,24 @@ export class BookingRunner extends EventEmitter {
     return { success: false, message: "Payment did not confirm before the timeout. Check Padel Mates booking history before trying again." };
   }
 
+  async waitForManualPayment() {
+    let lastAlert = "";
+    while (true) {
+      this.assertRunning();
+      if (await this.page.locator("#successText, #paymentSuccess").count()) return;
+
+      const alert = this.page.locator("#alertMessage").first();
+      if (await alert.count() && await alert.isVisible().catch(() => false)) {
+        const text = (await alert.textContent())?.trim() ?? "";
+        if (text && text !== lastAlert) {
+          this.log(`Payment message: ${text}`, "warning");
+          lastAlert = text;
+        }
+      }
+      await this.page.waitForTimeout(500);
+    }
+  }
+
   async captureFailure() {
     if (!this.page || this.page.isClosed()) return;
     try {
@@ -382,6 +401,13 @@ export class BookingRunner extends EventEmitter {
     this.assertRunning();
     this.log(`${message} Pausing briefly for observation.`);
     await abortableDelay(this.config.observationDelayMs, this.abortController.signal);
+  }
+
+  nextRefreshSeconds() {
+    if (!this.config.randomiseRefresh) return this.config.pollIntervalSeconds;
+    const min = this.config.refreshMinSeconds;
+    const max = this.config.refreshMaxSeconds;
+    return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 }
 

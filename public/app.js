@@ -1,5 +1,5 @@
 const form = document.querySelector("#booking-form");
-const dryRun = document.querySelector("#dry-run");
+const paymentModes = document.querySelectorAll('input[name="paymentMode"]');
 const authorizeRow = document.querySelector("#authorize-row");
 const authorized = document.querySelector("#authorized");
 const errorBox = document.querySelector("#form-error");
@@ -7,15 +7,28 @@ const jobCard = document.querySelector("#job-card");
 const stopButton = document.querySelector("#stop-job");
 const submitButton = form.querySelector('button[type="submit"]');
 const dateInput = document.querySelector("#date");
+const randomiseRefresh = document.querySelector("#randomise-refresh");
+const pollInterval = document.querySelector("#poll-interval");
+const refreshRange = document.querySelector("#refresh-range");
+const refreshMin = document.querySelector("#refresh-min");
+const refreshMax = document.querySelector("#refresh-max");
+const showBrowser = document.querySelector("#show-browser");
+const FORM_STORAGE_KEY = "padelbooker.form.v1";
 let currentJob = null;
 let elapsedTimer = null;
 
 setDateBounds();
-dryRun.addEventListener("change", updateAuthorization);
+restoreFormState();
+for (const paymentMode of paymentModes) paymentMode.addEventListener("change", updateAuthorization);
+randomiseRefresh.addEventListener("change", updateRefreshMode);
+form.addEventListener("input", saveFormState);
+form.addEventListener("change", saveFormState);
 updateAuthorization();
+updateRefreshMode();
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  saveFormState();
   hideError();
   submitButton.disabled = true;
   const data = new FormData(form);
@@ -27,12 +40,15 @@ form.addEventListener("submit", async (event) => {
     time: data.get("time"),
     duration: Number(data.get("duration")),
     courtName: data.get("courtName"),
-    pollIntervalSeconds: Number(data.get("pollIntervalSeconds")),
+    pollIntervalSeconds: Number(pollInterval.value),
+    randomiseRefresh: randomiseRefresh.checked,
+    refreshMinSeconds: Number(refreshMin.value),
+    refreshMaxSeconds: Number(refreshMax.value),
     maxWaitMinutes: Number(data.get("maxWaitMinutes")),
     observationDelayMs: Number(data.get("observationDelaySeconds")) * 1000,
-    mode: dryRun.checked ? "dry-run" : "book",
+    mode: document.querySelector('input[name="paymentMode"]:checked').value,
     browserChannel: data.get("browserChannel"),
-    headless: !document.querySelector("#show-browser").checked,
+    headless: !showBrowser.checked,
     authorized: authorized.checked
   };
 
@@ -85,7 +101,7 @@ function renderJob(job) {
   document.querySelector("#attempts").textContent = job.attempts;
   document.querySelector("#target").textContent = `${job.config.date} · ${job.config.time}`;
   document.querySelector("#job-title").textContent = titleFor(job.status);
-  const terminal = ["booked", "dry-run-ready", "failed", "stopped"].includes(job.status);
+  const terminal = ["booked", "failed", "stopped"].includes(job.status);
   stopButton.disabled = terminal;
   stopButton.textContent = terminal ? "Monitoring ended" : "Stop monitoring";
   submitButton.disabled = !terminal;
@@ -113,8 +129,8 @@ function titleFor(status) {
     checking: "Checking availability",
     waiting: "Watching for an opening",
     checkout: "Slot found — checking out",
+    "awaiting-payment": "Waiting for manual payment",
     booked: "Court booked",
-    "dry-run-ready": "Dry run complete",
     failed: "Needs attention",
     stopped: "Monitoring stopped"
   })[status] || "Booking monitor";
@@ -133,10 +149,88 @@ function startElapsedClock(startedAt) {
 }
 
 function updateAuthorization() {
-  const live = !dryRun.checked;
-  authorizeRow.classList.toggle("hidden", !live);
-  authorized.required = live;
-  if (!live) authorized.checked = false;
+  const automatic = document.querySelector('input[name="paymentMode"]:checked').value === "automatic";
+  authorizeRow.classList.toggle("hidden", !automatic);
+  authorized.required = automatic;
+  if (!automatic) {
+    authorized.checked = false;
+    showBrowser.checked = true;
+  }
+  showBrowser.disabled = !automatic;
+}
+
+function updateRefreshMode() {
+  const randomised = randomiseRefresh.checked;
+  pollInterval.disabled = randomised;
+  refreshRange.classList.toggle("hidden", !randomised);
+  refreshMin.required = randomised;
+  refreshMax.required = randomised;
+}
+
+function saveFormState() {
+  const data = new FormData(form);
+  const state = {
+    clubUrl: data.get("clubUrl"),
+    email: data.get("email"),
+    date: data.get("date"),
+    time: data.get("time"),
+    duration: data.get("duration"),
+    courtName: data.get("courtName"),
+    pollIntervalSeconds: pollInterval.value,
+    randomiseRefresh: randomiseRefresh.checked,
+    refreshMinSeconds: refreshMin.value,
+    refreshMaxSeconds: refreshMax.value,
+    maxWaitMinutes: data.get("maxWaitMinutes"),
+    observationDelaySeconds: data.get("observationDelaySeconds"),
+    browserChannel: data.get("browserChannel"),
+    paymentMode: data.get("paymentMode"),
+    showBrowser: showBrowser.checked
+  };
+  try {
+    localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // The form still works if browser storage is unavailable.
+  }
+}
+
+function restoreFormState() {
+  let state;
+  try {
+    state = JSON.parse(localStorage.getItem(FORM_STORAGE_KEY));
+  } catch {
+    return;
+  }
+  if (!state || typeof state !== "object") return;
+
+  const textFields = [
+    "clubUrl",
+    "email",
+    "date",
+    "time",
+    "duration",
+    "courtName",
+    "pollIntervalSeconds",
+    "refreshMinSeconds",
+    "refreshMaxSeconds",
+    "maxWaitMinutes",
+    "observationDelaySeconds"
+  ];
+  for (const name of textFields) {
+    if (state[name] === undefined || state[name] === null) continue;
+    const input = form.elements.namedItem(name);
+    if (input) input.value = String(state[name]);
+  }
+
+  const browser = form.querySelector(`input[name="browserChannel"][value="${safeRadioValue(state.browserChannel)}"]`);
+  if (browser) browser.checked = true;
+  const payment = form.querySelector(`input[name="paymentMode"][value="${safeRadioValue(state.paymentMode)}"]`);
+  if (payment) payment.checked = true;
+  randomiseRefresh.checked = state.randomiseRefresh === true;
+  if (typeof state.showBrowser === "boolean") showBrowser.checked = state.showBrowser;
+}
+
+function safeRadioValue(value) {
+  return String(value ?? "").replace(/[^a-z-]/gi, "");
 }
 
 function setDateBounds() {

@@ -33,6 +33,36 @@ label {
   font-weight: 600;
 }
 
+.field {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+}
+
+.label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.small-check {
+  display: flex;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.range {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.range label { font-size: 12px; }
+
 input, button {
   min-height: 34px;
   padding: 6px 8px;

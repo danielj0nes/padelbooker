@@ -34,7 +34,7 @@ app.get("/api/jobs/:id", (request, response) => {
 });
 
 app.post("/api/jobs", (request, response) => {
-  const active = Array.from(jobs.values()).find((job) => !["booked", "dry-run-ready", "failed", "stopped"].includes(job.status));
+  const active = Array.from(jobs.values()).find((job) => !["booked", "failed", "stopped"].includes(job.status));
   if (active) return response.status(409).json({ error: "A booking job is already running. Stop it before starting another." });
 
   const validation = validateBookingInput(request.body);
@@ -74,6 +74,5 @@ function broadcast(job) {
 }
 
 app.listen(port, host, () => {
-  console.log(`Padel Booker is ready at http://${host}:${port}`);
-  console.log("Credentials stay in this process only and are cleared when a job finishes.");
+  console.log(`Padel Booker is ready at http://${host}:${port} :-)`);
 });

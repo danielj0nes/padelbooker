@@ -9,15 +9,23 @@ Requirements: Node.js 20 or newer.
 ```bash
 npm install
 npx playwright install chromium
+```
+
+## Running
+```bash
 npm start
 ```
 
 Open `http://127.0.0.1:4173`.
 
-Consider testing first with **Dry run**. It performs the sign-in, availability checks, slot selection, and checkout setup, then stops before the payment button and saves a screenshot under `artifacts/`.
+**Manual payment** is the default. The bot reaches checkout and waits while you enter or confirm payment in the visible browser.
 
-To make a real booking, clear **Dry run**, then tick **Authorize live booking and payment**. Live mode submits the final booking and payment, so verify the club, date, time, duration, and court preference first.
+**Automatic payment** uses the account's saved payment method or club credit and submits payment automatically. Tick the authorisation checkbox that appears.
 
 To watch the automation, keep **Show browser** enabled and set **Step pause** to `1.5` or `2.5` seconds.
+
+Enable **Randomise** beside **Refresh** to choose a new delay for every check. Set the inclusive minimum and maximum delay in seconds (2–120).
+
+The form remembers its settings in browser storage. Passwords and the automatic-payment authorisation are not stored; use the browser's password manager for the password.
 
 If the bank asks for 3-D Secure, run with **Show browser window** enabled and approve the challenge manually. After a timeout or payment error, check Padel Mates booking history before retrying to avoid a duplicate booking.

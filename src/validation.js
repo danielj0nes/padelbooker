@@ -9,9 +9,12 @@ export function validateBookingInput(input, now = new Date()) {
   const courtName = String(input?.courtName ?? "").trim().slice(0, 100);
   const duration = Number(input?.duration);
   const pollIntervalSeconds = Number(input?.pollIntervalSeconds);
+  const randomiseRefresh = input?.randomiseRefresh === true;
+  const refreshMinSeconds = Number(input?.refreshMinSeconds ?? 3);
+  const refreshMaxSeconds = Number(input?.refreshMaxSeconds ?? 8);
   const maxWaitMinutes = Number(input?.maxWaitMinutes);
   const observationDelayMs = Number(input?.observationDelayMs ?? 0);
-  const mode = input?.mode === "dry-run" ? "dry-run" : "book";
+  const mode = input?.mode === "automatic" ? "automatic" : "manual";
   const headless = input?.headless !== false;
   const browserChannel = ["chrome", "msedge", "bundled"].includes(input?.browserChannel)
     ? input.browserChannel
@@ -46,8 +49,19 @@ export function validateBookingInput(input, now = new Date()) {
   if (!Number.isInteger(duration) || duration < 30 || duration > 240 || duration % 30 !== 0) {
     errors.push("Duration must be between 30 and 240 minutes in 30-minute steps.");
   }
-  if (!Number.isFinite(pollIntervalSeconds) || pollIntervalSeconds < 2 || pollIntervalSeconds > 120) {
+  if (!randomiseRefresh && (!Number.isFinite(pollIntervalSeconds) || pollIntervalSeconds < 2 || pollIntervalSeconds > 120)) {
     errors.push("Refresh interval must be between 2 and 120 seconds.");
+  }
+  if (randomiseRefresh) {
+    if (!Number.isInteger(refreshMinSeconds) || refreshMinSeconds < 2 || refreshMinSeconds > 120) {
+      errors.push("Minimum random refresh must be between 2 and 120 seconds.");
+    }
+    if (!Number.isInteger(refreshMaxSeconds) || refreshMaxSeconds < 2 || refreshMaxSeconds > 120) {
+      errors.push("Maximum random refresh must be between 2 and 120 seconds.");
+    }
+    if (refreshMinSeconds > refreshMaxSeconds) {
+      errors.push("Minimum random refresh cannot be greater than the maximum.");
+    }
   }
   if (!Number.isFinite(maxWaitMinutes) || maxWaitMinutes < 1 || maxWaitMinutes > 1440) {
     errors.push("Maximum wait must be between 1 minute and 24 hours.");
@@ -64,8 +78,11 @@ export function validateBookingInput(input, now = new Date()) {
     if (daysAway > 60) errors.push("Padel Mates currently exposes at most 60 days of availability.");
   }
 
-  if (mode === "book" && input?.authorized !== true) {
+  if (mode === "automatic" && input?.authorized !== true) {
     errors.push("Confirm that you authorize the final booking and charge.");
+  }
+  if (mode === "manual" && headless) {
+    errors.push("Manual payment requires Show browser to be enabled.");
   }
 
   if (errors.length) return { ok: false, errors };
@@ -81,12 +98,15 @@ export function validateBookingInput(input, now = new Date()) {
       courtName,
       duration,
       pollIntervalSeconds,
+      randomiseRefresh,
+      refreshMinSeconds,
+      refreshMaxSeconds,
       maxWaitMinutes,
       observationDelayMs,
       mode,
       headless,
       browserChannel,
-      authorized: mode === "book"
+      authorized: mode === "automatic"
     }
   };
 }

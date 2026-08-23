@@ -35,14 +35,26 @@
           <input name="courtName" type="text" maxlength="100">
         </label>
 
-        <label>Refresh (seconds)
-          <input name="pollIntervalSeconds" type="number" min="2" max="120" value="5" required>
-        </label>
+        <div class="field">
+          <div class="label-row">
+            <label for="poll-interval">Refresh (seconds)</label>
+            <label class="small-check"><input id="randomise-refresh" type="checkbox"> Randomise</label>
+          </div>
+          <input id="poll-interval" name="pollIntervalSeconds" type="number" min="2" max="120" value="5" required>
+          <div id="refresh-range" class="range hidden">
+            <label>Min
+              <input id="refresh-min" name="refreshMinSeconds" type="number" min="2" max="120" value="3">
+            </label>
+            <label>Max
+              <input id="refresh-max" name="refreshMaxSeconds" type="number" min="2" max="120" value="8">
+            </label>
+          </div>
+        </div>
         <label>Stop after (minutes)
           <input name="maxWaitMinutes" type="number" min="1" max="1440" value="120" required>
         </label>
-        <label>Step pause (seconds, 0–3)
-          <input name="observationDelaySeconds" type="number" min="0" max="3" step="0.25" value="1.5" required>
+        <label>Step pause (seconds, 0 - 3)
+          <input name="observationDelaySeconds" type="number" min="0" max="3" step="0.25" value="0" required>
         </label>
 
         <fieldset class="wide inline">
@@ -52,14 +64,19 @@
           <label><input type="radio" name="browserChannel" value="bundled"> Playwright</label>
         </fieldset>
 
+        <fieldset class="wide inline">
+          <legend>Payment</legend>
+          <label><input type="radio" name="paymentMode" value="manual" checked> Manual payment</label>
+          <label><input type="radio" name="paymentMode" value="automatic"> Automatic payment</label>
+        </fieldset>
+
         <div class="wide inline options">
-          <label><input id="dry-run" type="checkbox" checked> Dry run</label>
           <label><input id="show-browser" type="checkbox" checked> Show browser</label>
         </div>
 
         <label class="wide authorize hidden" id="authorize-row">
           <input id="authorized" type="checkbox">
-          Authorize live booking and payment
+          Authorise automatic booking and payment
         </label>
 
         <div id="form-error" class="error wide" role="alert" hidden></div>
